@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+#Application to crawl the recruitment-portal for information/cellphone-numbers and using the tool to send texts based
+#on subject/language. Minimal viable product. Needs try-catches in selenium and more logging. Didn't get to this yet.
+
 """-----------------------------------------------------------------------"""
 """-----------------------------------------------------------------------"""
 """-------------------------------IMPORTS---------------------------------"""
@@ -104,7 +107,7 @@ def smsto_verstuur_sms():
             smsto_verstuur_sms_button.configure(state=DISABLED)
     except messagebird.client.ErrorException as e:
        for error in e.errors:
-           print(error)"""
+           print(error)
         
 
 #Onderstaande functie creërt een popup-window dat bevestigt naar wie een SMS
