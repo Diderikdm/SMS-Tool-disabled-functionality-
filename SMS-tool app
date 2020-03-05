@@ -1,0 +1,1036 @@
+#!/usr/bin/python
+
+"""-----------------------------------------------------------------------"""
+"""-----------------------------------------------------------------------"""
+"""-------------------------------IMPORTS---------------------------------"""
+"""-----------------------------------------------------------------------"""
+"""-----------------------------------------------------------------------"""
+
+#############################################################################
+# Onderstaande imports zijn kritiek voor het runnen van deze applicatie.
+#############################################################################
+
+import tkinter as tk
+from tkinter import ttk
+from tkinter import *
+from PIL import ImageTk, Image
+import os
+import datetime
+import calendar
+import babel
+from babel import numbers
+from tkcalendar import Calendar
+import selenium
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from time import sleep
+import messagebird
+from dateutil.parser import parse
+import inspect
+
+
+"""-----------------------------------------------------------------------"""
+"""-----------------------------------------------------------------------"""
+"""--------------------------------SMSTO----------------------------------"""
+"""-----------------------------------------------------------------------"""
+"""-----------------------------------------------------------------------"""
+
+
+#############################################################################
+# SMSTO-blok
+# Onderstaande functies worden aangeroepen wanneer op de
+# 'verstuur SMS' knop wordt gedrukt in het SMSTO-main-menu.
+# ###########################################################################
+
+
+#Onderstaande functie haalt de geselecteerde namen op uit de "Personen"-
+#ListBox, roept de messagebirdclient aan om smsjes te versturen en stuurt per
+#persoon een sms op basis van een standaard groet, voornaam en de opgehaalde
+#tekst uit het "Te versturen SMS"-vak. vervolgens roept het de functie
+#smsto_verzonden_berichten() aan en haalt de personen op aan wie een SMS is
+#verzonden uit de "Personen"-ListBox. als de lijst leeg is, worden de vakken
+#"Personen", "Telefoonnummers", en "Masterclass + AT" disabled.
+
+def smsto_verstuur_sms():
+    global smsto_tekstvak_vak
+    global smsto_persoon_en_nummer
+    global smsto_nederlandse_modus
+    global smsto_engelse_modus
+    global smsto_nederlands_label
+    global smsto_personen_vak
+    global smsto_persoon_en_nummer
+    global smsto_nummers_vak
+    global smsto_masterclass
+    global teller
+    global smsto_groet_sms
+    global smsto_berichten
+    global smsto_te_verzenden
+    smsto_te_verzenden = []
+    smsto_berichten = ''
+    client = messagebird.Client('placeholder')
+    if smsto_nederlandse_modus == 1:
+        smsto_groet_sms = 'Hallo '
+    elif smsto_engelse_modus == 1:
+        smsto_groet_sms = 'Hi '
+    #try:
+    if True:
+        for index in smsto_personen_vak.curselection():
+            smsto_te_verzenden.append(smsto_persoon_en_nummer[index][:])
+            msg = client.message_create('Placeholder', smsto_persoon_en_nummer[index][1], smsto_groet_sms + smsto_persoon_en_nummer[index][0].split(" ")[0] + ",\n\n" + smsto_tekstvak_vak.get(0.0, END))
+            print('placeholder', smsto_persoon_en_nummer[index][1], smsto_groet_sms + smsto_persoon_en_nummer[index][0].split(" ")[0] + ",\n\n" + smsto_tekstvak_vak.get(0.0, END))
+        smsto_berichten = (smsto_groet_sms + ' <Voornaam>,\n\n' + smsto_tekstvak_vak.get(0.0, END))
+        smsto_verzonden_berichten()
+        for verzonden in smsto_te_verzenden:
+            for persoon in smsto_persoon_en_nummer:
+                if verzonden == persoon:
+                    del smsto_persoon_en_nummer[smsto_persoon_en_nummer.index(persoon)]
+        smsto_personen_vak.delete(0, 'end')
+        smsto_nummers_vak.delete(0, 'end')
+        smsto_masterclass_vak.delete(0, 'end')
+        teller = 1
+        for combi in smsto_persoon_en_nummer:
+            smsto_personen_vak.insert(teller, combi[0])
+            smsto_nummers_vak.insert(teller, combi[1])
+            smsto_masterclass_vak.insert(teller, combi[2])
+            teller += 1
+        if len(smsto_persoon_en_nummer) == 0:
+            smsto_telefoonlijst_leeg_button.configure(state=DISABLED)
+            smsto_personen_vak.configure(state=DISABLED)
+            smsto_nummers_vak.configure(state=DISABLED)
+            smsto_masterclass_vak.configure(state=DISABLED)
+            smsto_verstuur_sms_button.configure(state=DISABLED)
+    except messagebird.client.ErrorException as e:
+       for error in e.errors:
+           print(error)"""
+        
+
+#Onderstaande functie creërt een popup-window dat bevestigt naar wie een SMS
+#is verstuurd en welke tekst naar deze personen is verzonden. De lijst met namen
+#wordt uit de lijst: smsto_te_verzenden gehaald. Deze lijst wordt gegenereerd in
+#de functie smsto_verstuur_sms(). 
+
+def smsto_verzonden_berichten():
+    global smsto_verzonden
+    global smsto_tekstvak_vak
+    global smsto_berichten
+    global sms_reminder_analytische_test
+    global sms_reminder_assessment
+    global sms_persoonlijke_sms_text
+    global smsto_te_verzenden
+    verzonden_teller = 1
+    smsto_verzonden = tk.Toplevel() #Creeert een pop-up vanuit de main window
+    smsto_verzonden.wm_title("Verzonden SMS")
+    smsto_verzonden.tk.call('wm', 'iconphoto', smsto_verzonden._w, tk.PhotoImage(file='top_logo.png'))
+    smsto_verzonden.geometry('460x270')
+    smsto_verzonden.configure(background = 'white')
+    smsto_verzonden_sms_label = tk.Label(smsto_verzonden, text = "Verzonden SMS:", bg = 'white')
+    smsto_verzonden_sms_label.place(x=10, y=10)
+    smsto_verzonden_sms_vak = tk.Text(smsto_verzonden, fg = 'gray', state=NORMAL, font='TkDefaultFont', wrap=WORD, relief ='solid', bd = 1)
+    smsto_verzonden_sms_vak.place(x=10, y = 30, height = 200, width = 260)
+    smsto_verzonden_sms_vak.insert(INSERT, smsto_berichten)
+    smsto_verzonden_sluit = Button(smsto_verzonden, text="sluit", command=smsto_sluit_verzonden_sms, background = 'white')
+    smsto_verzonden_sluit.place(x=5, y=240, width = 80)
+    smsto_verzonden_personen_sms_label = tk.Label(smsto_verzonden, text = "Naar:", bg = 'white')
+    smsto_verzonden_personen_sms_label.place(x=280, y=10)
+    smsto_verzonden_personen_sms_vak = tk.Listbox(smsto_verzonden, state=NORMAL, fg = 'gray', font='TkDefaultFont', relief ='solid', bd = 1)
+    smsto_verzonden_personen_sms_vak.place(x=280, y = 30, height = 200, width = 120)
+    for persoon in smsto_te_verzenden:
+        smsto_verzonden_personen_sms_vak.insert(teller, persoon[0])
+        verzonden_teller += 1
+    smsto_verzonden_sms_vak.configure(state=DISABLED)
+    smsto_verzonden_personen_sms_vak.configure(state=DISABLED)
+
+
+#Onderstaande functie sluit het popup-window dat bevestigt welke SMS naar
+#welke personen is verstuurd. Deze functie staat gebonden aan de sluitknop.
+
+def smsto_sluit_verzonden_sms():
+    global smsto_verzonden
+    smsto_verzonden.destroy()
+
+
+
+
+
+#############################################################################
+# SMSTO-blok
+# Onderstaande functies worden aangeroepen wanneer op de
+# 'zoek'-knop wordt gedrukt
+# ###########################################################################
+
+
+#Onderstaande functie probeert op basis van een try-except of de ingevoerde
+#tekst in het "Zoek op naam of datum:"-vak een vorm van een datum is. (bijv.
+#yyyy-MM-dd, 18 Feb, etc..).
+#Als de try lukt, wordt op datum gezocht in de functie: smsto_zoek_placeholder_script(),.
+#anders wordt op 'naam' gezocht.
+
+def smsto_zoek_placeholder(event=None):
+    global zoekfunctie
+    try:
+        zoekfunctie = 'datum'
+        parse(smsto_invoer_vak.get())
+    except ValueError:
+        zoekfunctie = 'naam'
+    finally:
+        smsto_zoek_placeholder_script()
+
+   
+#Onderstaande functie is de selenium-functie die via Chrome gaat zoeken naar
+#informatie in placeholder op basis van het type sms dat moet gaan worden verstuurd en
+#of op naam/datum moet worden gezocht. De functie voert inloggegevens in
+#op basis van het textbestand: "smsto_config.txt". Wanneer de functie op datum
+#moet zoeken (zie functie: smsto_zoek_placeholder()), opent selenium de agenda en
+#bladert door de agenda door middel van vergelijking van opgegeven datum in het
+#"Zoek op naam of datum:"-vak en het maandnummer in de agenda. Wanneer de
+#Juiste datum is gevonden haalt selenium uit het agenda-item waar naar wordt
+#gezocht de lijst met namen die voor dit item staan gepland en sluit de agenda.
+#Als op naam wordt gezocht wordt voorgaande stap overgeslagen en wordt alleen de
+#opgegeven naam aan de lijst met namen toegevoegd.
+#Vervolgens zoekt selenium elk persoon in de lijst op via de zoekfunctie op de
+#main page. Naam en telefoonnummer worden overgenomen en worden index 0 en 1 per
+#persoon in de lijst smsto_persoon_en_nummer. vervolgens opent het per persoon het
+#persoonsprofiel en wacht tot bepaalde elementen zijn geladen. Vervolgens worden
+#type masterclass en AT-score (als deze is gemaakt) opgehaald. Dit worden index
+#2 en 3 per persoon:
+#smsto_persoon_en_nummer.append([persoon, nummer, masterclass, analytische_test_score])
+#opvolgende personen worden op dezelfde manier toegevoegd. smsto_persoon_en_nummer
+#wordt dus een lijst in een lijst:
+#[[p1,n1,m1,a1],
+# [p2,n2,m2,a2],
+# [..],
+# [..]]
+#Als selenium personen en nummers vindt die al in de ListBoxen
+#staan worden deze niet dubbel toegevoegd. Als de "Personen"-ListBox 1 of meer
+#personen bevat, wordt de staat van de listboxen in het smsto main menu
+#NORMAL (klikbaar). Vervolgens sluit selenium Chrome en zichzelf.
+        
+def smsto_zoek_placeholder_script():
+    global smsto_invoer_vak
+    global smsto_persoon_en_nummer
+    global smsto_personen_vak
+    global smsto_nummers_vak
+    global smsto_verstuur_sms_button
+    global smsto_telefoonlijst_leeg_button
+    global smsto_mainmenu_keuze_combobox
+    global zoekfunctie
+    global teller
+    global smsto_engelse_modus
+    global smsto_nederlandse_modus
+    namen = []
+    username, password = open('smsto_config.txt').read().split(' - ')
+    driver = webdriver.Chrome()
+    driver.get('https://placeholder/login')
+    element = WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, "inputEmail")))
+    sleep(1)
+    elem = driver.find_element_by_id("inputEmail")
+    elem.clear()
+    elem.send_keys(username)
+    elem = driver.find_element_by_id("inputPassword")
+    elem.clear()
+    elem.send_keys(password)
+    sleep(1)
+    elem.send_keys(Keys.RETURN)
+    if zoekfunctie == 'datum':
+        datum_te_zoeken = smsto_invoer_vak.get()
+        element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "portlet_searchbox")))
+        driver.get('https://placeholder/calendar')
+        element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//button[@title='Datum']")))
+        elem = driver.find_element_by_xpath("//button[@title='Datum']")
+        elem.click()
+        element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@class='visualmonthyear']")))
+        elem = driver.find_element_by_xpath("//div[@class='visualmonthyear']")
+        dag_maand_te_zoeken = str(int(str(parse(smsto_invoer_vak.get()))[8:10])) + '-' + str(int(str(parse(smsto_invoer_vak.get()))[5:7]))
+        jaar_maand_in_placeholder = str(parse(elem.text))[:7]
+        jaar_maand_te_zoeken = str(parse(smsto_invoer_vak.get()))[:7]
+        dag_te_zoeken = str(parse(smsto_invoer_vak.get()))[8:10]
+        while str(parse(smsto_invoer_vak.get()))[:7] != str(parse(elem.text))[:7]:
+            elem = driver.find_element_by_xpath("//div[@class='visualmonthyear']")
+            if str(parse(smsto_invoer_vak.get()))[:7] > str(parse(elem.text))[:7]:
+                volgende_maand = driver.find_element_by_xpath("//span[text()='']")
+                volgende_maand.click()
+            elif str(parse(smsto_invoer_vak.get()))[:7] < str(parse(elem.text))[:7]:
+                vorige_maand = driver.find_element_by_xpath("//span[text()='']")
+                vorige_maand.click()
+        sleep(0.1)
+        element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@class='bootstrapCalendarDay']")))
+        elem = driver.find_element_by_xpath("//a[contains(@class,'bootstrapCalendarDay') and contains(text(), '%s')]" % str(int(dag_te_zoeken)))
+        elem.click()
+        sleep(1)
+        elem = driver.find_element_by_xpath("//a[contains(text(), '%s')]" % dag_maand_te_zoeken)
+        elem.click()
+        element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@class='fc-content']")))
+        sleep(0.5)
+        if smsto_mainmenu_keuze_combobox.get() == "placeholder":
+            elem = driver.find_element_by_xpath("//a[@title='CMC online analytische test']/div/div")
+        elif smsto_mainmenu_keuze_combobox.get() == "placeholder":
+            elem = driver.find_element_by_xpath("//a[@title='Assessmentdag']/div/div")
+        opgehaalde_namen = elem.get_attribute("title").splitlines()
+        for naam in opgehaalde_namen:
+            wie, gereageerd = naam.split(": ")
+            if gereageerd == "Not responded yet":
+                namen.append(wie)
+    elif zoekfunctie == 'naam':       
+        naam = smsto_invoer_vak.get()
+        namen.append(naam)
+    smsto_personen_vak.configure(state=NORMAL)
+    smsto_nummers_vak.configure(state=NORMAL)
+    smsto_masterclass_vak.configure(state=NORMAL)
+    for naam in namen:
+        print(str(datetime.datetime.now()) + "\tOphalen gegevens: " + str(namen.index(naam)+1) + "/" + str(len(namen)) + " - " + naam)
+        driver.get('https://placeholder/today/')
+        element = WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, "portlet_searchbox")))
+        elem = driver.find_element_by_xpath("//input[@placeholder='Zoek een persoon...']")
+        elem.clear()
+        elem.send_keys(naam)
+        element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "candidate-photo-con")))
+        sleep(1)
+        elem.send_keys(Keys.TAB)
+        naam_nummer = driver.find_element_by_class_name("ds-c-searchbox__title")
+        persoon = naam_nummer.text.splitlines()[0]
+        nummer = driver.find_element_by_partial_link_text('').text.strip(" ")
+        elem = driver.find_element_by_xpath('//button[text()="Openen"]')
+        elem.click()
+        element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//button[@popover-title='Geschiedenis']")))
+        elem = driver.find_element_by_partial_link_text("placeholder")
+        if elem.text == "placeholders":
+            masterclass = "placeholder" 
+        elif elem.text == "placeholder":
+            masterclass = "placeholder"
+        elif elem.text == "placeholder": 
+            masterclass = "blaceholder"
+        elif elem.text == "placeholder":
+            masterclass = "placeholder"
+        elif elem.text == "placeholder":
+            masterclass = "placeholder"
+        element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//tags-input[@placeholder='Matchcriterium toevoegen']")))
+        try:
+            elem = driver.find_element_by_xpath("//ti-tag-item/ng-include/span[contains(text(),',')]")
+            analytische_test_score = elem.text.replace(',','.')
+            if float(analytische_test_score) >= 60.00:
+                masterclass = masterclass + ' ✓'
+            else:
+                masterclass = masterclass + ' ⚠'
+            analytische_test_score = "Score: " + analytische_test_score
+        except:
+            if smsto_mainmenu_keuze_combobox.get() == "placeholder":
+                analytische_test_score = 'nog niet gemaakt'
+            elif smsto_mainmenu_keuze_combobox.get() == "placeholder":
+                analytische_test_score = 'Fout bij ophalen AT'
+            masterclass = masterclass + ' ❌'
+        elem = driver.find_element_by_xpath('//a[@class="o-svg o-svg--large u-animation-turn-90 c-modal__close-btn"]')
+        elem.click()
+        smsto_persoon_en_nummer.append([persoon, nummer, masterclass, analytische_test_score])
+        if len(smsto_persoon_en_nummer) > 0:
+            smsto_verstuur_sms_button.configure(state=NORMAL)
+            smsto_telefoonlijst_leeg_button.configure(state=NORMAL)
+        if naam not in smsto_personen_vak.get(0, END) and nummer not in smsto_nummers_vak.get(0,END):
+            smsto_personen_vak.insert(teller, smsto_persoon_en_nummer[teller-1][0])
+            smsto_nummers_vak.insert(teller, smsto_persoon_en_nummer[teller-1][1])
+            smsto_masterclass_vak.insert(teller, smsto_persoon_en_nummer[teller-1][2])
+            teller += 1
+    driver.close()
+    driver.quit()
+
+
+
+
+
+
+#############################################################################
+# SMSTO-blok
+# Onderstaande functies kunnen worden aangeroepen wanneer de ListBoxen
+# "Personen", "Telefoonnummers" en "Masterclass + AT" minimaal 1 persoon
+# bevatten
+# ###########################################################################
+
+
+#Onderstaande functie maakt de label met AT-score onder het "Masterclass + AT"-
+#vak leeg wanneer je de muis van het "Masterclass + AT"-vak af gaat. 
+
+def smsto_popup_analytische_test_weg(event):
+    global smsto_welke_score_label
+    smsto_welke_score_label.configure(text='')
+
+#Onderstaande functie stuurt de AT-score van de geselecteerde persoon in het
+#"Masterclass + AT"-vak naar de label onder het "Masterclass + AT"-vak.
+#Sidenote: Deze functie werkt stabiel als je met de up- en down-knoppen door de
+#lijst gaat. Klikken op een naam heeft een delay.
+
+def smsto_popup_analytische_test(event):
+    global smsto_welke_score_label
+    global smsto_persoon_en_nummer
+    global smsto_masterclass_vak
+    print(smsto_persoon_en_nummer[smsto_masterclass_vak.index(ACTIVE)])
+    print(smsto_persoon_en_nummer[smsto_masterclass_vak.index(ACTIVE)][3])
+    smsto_welke_score_label.configure(text=smsto_persoon_en_nummer[smsto_masterclass_vak.index(ACTIVE)][3])
+
+#Onderstaande functie verwijdert alle personen uit de listboxes en reset de
+#lijst smsto_persoon_en_nummer (gegenereerd in smsto_zoek_placeholder_script()) en zet
+#de indexteller terug op 1. Alle relevante velden worden disabled. Wordt
+#aangeroepen als op de 'maak leeg'-knop wordt gedrukt.
+
+def smsto_maak_telefoonlijst_leeg():
+    global smsto_persoon_en_nummer
+    global smsto_personen_vak
+    global smsto_nummers_vak
+    global smsto_telefoonlijst_leeg_button
+    global smsto_verstuur_sms_button
+    global smsto_masterclass_vak
+    global teller
+    smsto_personen_vak.delete(0, 'end')
+    smsto_nummers_vak.delete(0, 'end')
+    smsto_masterclass_vak.delete(0, 'end')
+    smsto_personen_vak.configure(state=DISABLED)
+    smsto_nummers_vak.configure(state=DISABLED)
+    smsto_masterclass_vak.configure(state=DISABLED)
+    smsto_persoon_en_nummer = []
+    smsto_telefoonlijst_leeg_button.configure(state=DISABLED)
+    smsto_verstuur_sms_button.configure(state=DISABLED)
+    teller = 1
+
+#Onderstaande functie wordt aangeroepen als je 1 persoon hebt geselecteerd in de
+#"Personen"-ListBox en op je keyboard op delete klikt. De tupel met informatie
+#wordt uit de lijst smsto_persoon_en_nummer gehaald (gegenereerd in
+#smsto_zoek_placeholder_script()) en de listboxen worden geupdatet.
+
+def smsto_delete_persoon_en_nummer_van_lijst(event):
+    global smsto_persoon_en_nummer
+    global smsto_personen_vak
+    global smsto_nummers_vak
+    global smsto_masterclass_vak
+    global smsto_verstuur_sms_button
+    global teller
+    del(smsto_persoon_en_nummer[smsto_personen_vak.index(ACTIVE)])
+    smsto_personen_vak.delete(0, 'end')
+    smsto_nummers_vak.delete(0, 'end')
+    smsto_masterclass_vak.delete(0, 'end')
+    teller = 1
+    for combi in smsto_persoon_en_nummer:
+        smsto_personen_vak.insert(teller, combi[0])
+        smsto_nummers_vak.insert(teller, combi[1])
+        smsto_masterclass_vak.insert(teller, combi[2])
+        teller += 1
+    if len(smsto_persoon_en_nummer) == 0:
+        smsto_telefoonlijst_leeg_button.configure(state=DISABLED)
+        smsto_personen_vak.configure(state=DISABLED)
+        smsto_nummers_vak.configure(state=DISABLED)
+        smsto_masterclass_vak.configure(state=DISABLED)
+        smsto_verstuur_sms_button.configure(state=DISABLED)
+
+#Onderstaande functie heeft dezelfde functionaliteit als de functie
+#smsto_delete_persoon_en_nummer_van_lijst(event), alleen dan voor het
+#geselecteerde nummer in de "Telefoonnummers"-ListBox.
+      
+def smsto_delete_nummer_en_persoon_van_lijst(event):
+    global smsto_persoon_en_nummer
+    global smsto_personen_vak
+    global smsto_nummers_vak
+    global smsto_verstuur_sms_button
+    global smsto_masterclass_vak
+    global teller
+    del(smsto_persoon_en_nummer[smsto_nummers_vak.index(ACTIVE)])
+    smsto_personen_vak.delete(0, 'end')
+    smsto_nummers_vak.delete(0, 'end')
+    smsto_masterclass_vak.delete(0, 'end')
+    teller = 1
+    for combi in smsto_persoon_en_nummer:
+        smsto_personen_vak.insert(teller, combi[0])
+        smsto_nummers_vak.insert(teller, combi[1])
+        smsto_masterclass_vak.insert(teller, combi[2])
+        teller += 1
+    if len(smsto_persoon_en_nummer) == 0:
+        smsto_telefoonlijst_leeg_button.configure(state=DISABLED)
+        smsto_personen_vak.configure(state=DISABLED)
+        smsto_nummers_vak.configure(state=DISABLED)
+        smsto_masterclass_vak.configure(state=DISABLED)
+        smsto_verstuur_sms_button.configure(state=DISABLED)
+
+
+
+
+
+
+#############################################################################
+# SMSTO-blok
+# Onderstaande functies kunnen worden aangeroepen wanneer op de vlaggetjes-
+# buttons wordt gedrukt
+# ###########################################################################
+
+#Onderstaande functie wordt aangeroepen als op de nederlandse vlag wordt
+#geklikt. Als de Listboxen niet leeg zijn worden de personen die nederlands
+#zijn geselecteerd in de "Personen"-ListBox. het "Te versturen SMS"-vak
+#haalt de nederlandse versie van de SMS horend bij de geselecteerde sms
+#in de "Welk soort SMS wil je versturen?"-ComboBox op uit de textbestanden
+#waar de smsjes in staan.
+
+def smsto_nederlandstalig_optie_aan():
+    global smsto_nederlandse_modus
+    global smsto_engelse_modus
+    global smsto_engels_label
+    global smsto_nederlands_label
+    global smsto_personen_vak
+    global smsto_persoon_en_nummer
+    smsto_engels_label.config(text="")
+    smsto_nederlands_label.config(text="NL")
+    smsto_nederlandse_modus = 1
+    smsto_engelse_modus = 0
+    smsto_mainmenu_select_combobox()
+    smsto_personen_vak.selection_clear(0,END)
+    e = 0
+    while e < len(smsto_persoon_en_nummer):
+        if "Engels" not in smsto_persoon_en_nummer[e][2]:
+            smsto_personen_vak.selection_set(e)
+        e+=1
+        
+#Onderstaande functie wordt aangeroepen als op de engelse vlag wordt
+#geklikt. Dezelfde functionaliteit als smsto_nederlandstalig_optie_aan(),
+#alleen dan voor alle engelstalige personen/smsjes.
+           
+def smsto_engelstalig_optie_aan():
+    global smsto_nederlandse_modus
+    global smsto_engelse_modus
+    global smsto_engels_label
+    global smsto_nederlands_label
+    global smsto_personen_vak
+    global smsto_persoon_en_nummer
+    smsto_engels_label.config(text="EN")
+    smsto_nederlands_label.config(text="")
+    smsto_nederlandse_modus = 0
+    smsto_engelse_modus = 1
+    smsto_mainmenu_select_combobox()
+    smsto_personen_vak.selection_clear(0,END)
+    e = 0
+    while e < len(smsto_persoon_en_nummer):
+        if "Engels" in smsto_persoon_en_nummer[e][2]:
+            smsto_personen_vak.selection_set(e)
+        e+=1
+
+
+
+
+#############################################################################
+# SMSTO-blok
+# Onderstaande functies worden aangeroepen wanneer op het datum-icoontje naast
+# de zoekbalk wordt gedrukt. 
+# ###########################################################################
+
+#Onderstaande functie wordt aangeroepen als op de het datum-icoontje wordt
+#gedrukt. De calender pop-up wordt gecreërd.
+    
+def smsto_calendar_button_click():
+    global smsto_selecteer_datum
+    global smsto_selecteer_datum_calendar
+    smsto_selecteer_datum = tk.Toplevel()
+    smsto_selecteer_datum.wm_title("Datum selecteren")
+    smsto_selecteer_datum.tk.call('wm', 'iconphoto', smsto_selecteer_datum._w, tk.PhotoImage(file='top_logo.png'))  
+    smsto_selecteer_datum.geometry('230x230')
+    smsto_selecteer_datum.configure(background = 'white') 
+    smsto_selecteer_datum_calendar = Calendar(smsto_selecteer_datum, font="TkDefaultFont", selectmode='day',cursor="hand1", year=datetime.datetime.today().year, month=datetime.datetime.today().month, day=datetime.datetime.today().day)
+    smsto_selecteer_datum_calendar.place(x=5, y=5)
+    smsto_selecteer_datum_cancel_button = Button(smsto_selecteer_datum, text="terug", command=smsto_annuleer_datum, background = 'white')
+    smsto_selecteer_datum_cancel_button.place(x=5, y=195, width = 80)
+    smsto_selecteer_datum_button = Button(smsto_selecteer_datum, text="bevestig", command=smsto_bevestig_datum, background = 'white')
+    smsto_selecteer_datum_button.place(x=145, y=195, width = 80)
+
+#Onderstaande functie slaat de geselecteerde datum in de calender pop-up op
+#en vult de zoekbalk in met de geselecteerde datum.
+
+def smsto_bevestig_datum():
+    global smsto_selecteer_datum
+    global smsto_invoer_vak
+    global smsto_selecteer_datum_calendar
+    global geselecteerde_datum
+    smsto_invoer_vak.configure(state=NORMAL)
+    smsto_invoer_vak.delete(0, 'end')
+    geselecteerde_datum = smsto_selecteer_datum_calendar.selection_get()
+    smsto_invoer_vak.insert(INSERT, geselecteerde_datum)
+    smsto_selecteer_datum.destroy()
+
+#Onderstaande functie wordt aangeroepen als op de cancel-knop wordt gedrukt in
+#de calender pop-up. Het venster sluit.
+
+def smsto_annuleer_datum():
+    global smsto_selecteer_datum
+    smsto_selecteer_datum.destroy()
+
+
+
+
+
+
+#############################################################################
+# SMSTO-blok
+# Onderstaande functies worden aangeroepen wanneer op het datum-icoontje naast
+# de zoekbalk wordt gedrukt. 
+# ###########################################################################
+
+#Onderstaande functie wordt aangeroepen als op de 'pas standaard tekst aan'-knop
+#wordt gedrukt. De popup wordt gecreërd en de standaard tekst wordt opgehaald
+#op basis van de waarde in de "Welk soort SMS wil je versturen?"-Combobox en
+#welke taal is geselecteerd.
+
+def smsto_pas_text_aan():
+    global smsto_mainmenu
+    global smsto_mainmenu_keuze_combobox
+    global sms_default_keuze
+    global sms_reminder_analytische_test
+    global sms_reminder_assessment
+    global sms_persoonlijke_sms
+    global sms_reminder_analytische_test_text
+    global sms_reminder_assessment_text
+    global sms_persoonlijke_sms_text
+    global smsto_sms_textaanpas_vak
+    global smsto_sms_textaanpas
+    global smsto_checkbox_aan_uit
+    if smsto_mainmenu_keuze_combobox.get() != sms_default_keuze:
+        smsto_sms_textaanpas = tk.Toplevel()
+        smsto_sms_textaanpas.wm_title("Aanpassen: "+ smsto_mainmenu_keuze_combobox.get())
+        smsto_sms_textaanpas.tk.call('wm', 'iconphoto', smsto_sms_textaanpas._w, tk.PhotoImage(file='top_logo.png'))  
+        smsto_sms_textaanpas.geometry('280x250')
+        smsto_sms_textaanpas.configure(background = 'white')
+        smsto_sms_textaanpas_vak = tk.Text(smsto_sms_textaanpas, fg = 'gray', font='TkDefaultFont', wrap=WORD, relief ='solid', bd = 1)
+        smsto_sms_textaanpas_vak.place(x=10, y = 10, height = 200, width = 260)
+        smsto_sms_textaanpas_save_button = Button(smsto_sms_textaanpas, text="save", command=smsto_save_standaard_text, background = 'white')
+        smsto_sms_textaanpas_save_button.place(x=10, y=220, width = 80)
+        smsto_sms_textaanpas_cancel_button = Button(smsto_sms_textaanpas, text="cancel", command=smsto_cancel_standard_text, background = 'white')
+        smsto_sms_textaanpas_cancel_button.place(x=100, y=220, width = 80) 
+        if smsto_mainmenu_keuze_combobox.get() == sms_reminder_analytische_test:
+            smsto_sms_textaanpas_vak.insert(INSERT, sms_reminder_analytische_test_text)
+        elif smsto_mainmenu_keuze_combobox.get() == sms_reminder_assessment:
+            smsto_sms_textaanpas_vak.insert(INSERT, sms_reminder_assessment_text)
+        elif smsto_mainmenu_keuze_combobox.get() == sms_persoonlijke_sms:
+            smsto_sms_textaanpas_vak.insert(INSERT, sms_persoonlijke_sms_text)
+
+#Onderstaande functie wordt aangeroepen als op de 'save'-knop wordt gedrukt in
+#de "pas standaard tekst aan"-popup. De functie kijkt naar de geselecteerde
+#waarde van de "Welk soort SMS wil je versturen?"-ComboBox en de geselecteerde
+#taal. Vervolgens opent de functie het bijbehorende tekstbestand met standaard-
+#tekst en vervangt deze met de nieuwe tekst. Hierna sluit de popup.
+
+def smsto_save_standaard_text():
+    global sms_reminder_analytische_test
+    global sms_reminder_assessment
+    global sms_persoonlijke_sms
+    global sms_reminder_analytische_test_text
+    global sms_reminder_assessment_text
+    global sms_persoonlijke_sms_text
+    global smsto_sms_textaanpas_vak
+    global smsto_tekstvak_vak
+    global smsto_sms_textaanpas
+    global smsto_checkbox_aan_uit
+    global smsto_nederlandse_modus
+    global smsto_engelse_modus
+    if smsto_mainmenu_keuze_combobox.get() == sms_reminder_analytische_test and smsto_nederlandse_modus == 1:
+        sms_reminder_analytische_test_text = smsto_sms_textaanpas_vak.get(0.0, END)
+        sms_reminder_analytische_test_aanpassing = open('sms_reminder_analytische_test.txt', 'w')
+        sms_reminder_analytische_test_aanpassing.write(sms_reminder_analytische_test_text)
+        sms_reminder_analytische_test_aanpassing.close()
+        smsto_tekstvak_vak.delete(0.0, END)
+        smsto_tekstvak_vak.insert(INSERT, sms_reminder_analytische_test_text)
+    elif smsto_mainmenu_keuze_combobox.get() == sms_reminder_analytische_test and smsto_engelse_modus == 1:
+        sms_reminder_analytische_test_text = smsto_sms_textaanpas_vak.get(0.0, END)
+        sms_reminder_analytische_test_aanpassing = open('sms_reminder_analytische_test_engels.txt', 'w')
+        sms_reminder_analytische_test_aanpassing.write(sms_reminder_analytische_test_text)
+        sms_reminder_analytische_test_aanpassing.close()
+        smsto_tekstvak_vak.delete(0.0, END)
+        smsto_tekstvak_vak.insert(INSERT, sms_reminder_analytische_test_text)
+    elif smsto_mainmenu_keuze_combobox.get() == sms_reminder_assessment and  smsto_nederlandse_modus == 1:
+        sms_reminder_assessment_text = smsto_sms_textaanpas_vak.get(0.0, END)
+        sms_reminder_assessment_aanpassing = open('sms_reminder_assessment.txt', 'w')
+        sms_reminder_assessment_aanpassing.write(sms_reminder_assessment_text)
+        sms_reminder_assessment_aanpassing.close()
+        smsto_tekstvak_vak.delete(0.0, END)
+        smsto_tekstvak_vak.insert(INSERT, sms_reminder_assessment_text)
+    elif smsto_mainmenu_keuze_combobox.get() == sms_reminder_assessment and smsto_engelse_modus == 1:
+        sms_reminder_assessment_text = smsto_sms_textaanpas_vak.get(0.0, END)
+        sms_reminder_assessment_aanpassing = open('sms_reminder_assessment_engels.txt', 'w')
+        sms_reminder_assessment_aanpassing.write(sms_reminder_assessment_text)
+        sms_reminder_assessment_aanpassing.close()
+        smsto_tekstvak_vak.delete(0.0, END)
+        smsto_tekstvak_vak.insert(INSERT, sms_reminder_assessment_text)
+    elif smsto_mainmenu_keuze_combobox.get() == sms_persoonlijke_sms and smsto_nederlandse_modus == 1:
+        sms_persoonlijke_sms_text = smsto_sms_textaanpas_vak.get(0.0, END)
+        sms_persoonlijke_sms_aanpassing = open('sms_persoonlijke_sms.txt', 'w')
+        sms_persoonlijke_sms_aanpassing.write(sms_persoonlijke_sms_text)
+        sms_persoonlijke_sms_aanpassing.close()
+        smsto_tekstvak_vak.delete(0.0, END)
+        smsto_tekstvak_vak.insert(INSERT, sms_persoonlijke_sms_text)
+    elif smsto_mainmenu_keuze_combobox.get() == sms_persoonlijke_sms and smsto_engelse_modus == 1:
+        sms_persoonlijke_sms_text = smsto_sms_textaanpas_vak.get(0.0, END)
+        sms_persoonlijke_sms_aanpassing = open('sms_persoonlijke_sms_engels.txt', 'w')
+        sms_persoonlijke_sms_aanpassing.write(sms_persoonlijke_sms_text)
+        sms_persoonlijke_sms_aanpassing.close()
+        smsto_tekstvak_vak.delete(0.0, END)
+        smsto_tekstvak_vak.insert(INSERT, sms_persoonlijke_sms_text)
+    smsto_sms_textaanpas.destroy()
+    
+#Onderstaande functie wordt aangeroepen als op de cancel-knop wordt gedrukt in
+#de "pas standaard tekst aan" pop-up. Het venster sluit.
+
+def smsto_cancel_standard_text():
+    global smsto_sms_textaanpas
+    smsto_sms_textaanpas.destroy()
+
+
+
+
+
+
+
+#############################################################################
+# SMSTO-blok
+# Onderstaande functie wordt aangeroepen als een waarde in de "Welk soort SMS
+# wil je versturen?"-ComboBox wordt geselecteerd.
+# ###########################################################################
+
+
+#Onderstaande functie wordt aangeroepen als een waarde in de "Welk soort SMS
+#wil je versturen?"-ComboBox wordt geselecteerd. Het "Te versturen SMS"-tekstvak
+#wordt aangepast naar de bijbehorende SMS (opgehaald uit de SMS-bestanden) op
+#basis van geselecteerde taal. Wanneer een andere waarde dan "Maak een keuze"
+#wordt geselecteerd (kijkt ook naar het aantal personen in de listboxen),
+#maakt dit een aantal andere velden en knoppen NORMAL (aanpasbaar/klikbaar).
+
+def smsto_mainmenu_select_combobox(event=0):
+    global smsto_mainmenu_keuze_combobox
+    global smsto_tekstvak_vak
+    global sms_default_keuze
+    global sms_reminder_analytische_test
+    global sms_reminder_assessment
+    global sms_persoonlijke_sms
+    global sms_reminder_analytische_test_text
+    global sms_reminder_assessment_text
+    global sms_persoonlijke_sms_text
+    global smsto_calender_button
+    global smsto_invoer_vak
+    global smsto_zoek_button
+    global smsto_personen_vak
+    global smsto_nummers_vak
+    global smsto_masterclass_vak
+    global smsto_verstuur_sms_button
+    global smsto_checkbox_aan_uit
+    global teller
+    global smsto_nederlandse_modus
+    global smsto_engelse_modus
+    global smsto_persoon_en_nummer
+    print(str(datetime.datetime.now()) + "\tUser selected: " + smsto_mainmenu_keuze_combobox.get())
+    sms_reminder_analytische_test_text = open('sms_reminder_analytische_test.txt').read()
+    sms_reminder_assessment_text = open('sms_reminder_assessment.txt').read()
+    sms_persoonlijke_sms_text = open('sms_persoonlijke_sms.txt').read()
+    if smsto_engelse_modus == 1:
+        sms_reminder_analytische_test_text = open('sms_reminder_analytische_test_engels.txt').read()
+        sms_reminder_assessment_text = open('sms_reminder_assessment_engels.txt').read()
+        sms_persoonlijke_sms_text = open('sms_persoonlijke_sms_engels.txt').read()
+    smsto_calender_button.configure(state=NORMAL)
+    smsto_invoer_vak.configure(state=NORMAL)
+    smsto_zoek_button.configure(state=NORMAL)
+    if len(smsto_persoon_en_nummer) > 0:
+        smsto_personen_vak.configure(state=NORMAL)
+        smsto_nummers_vak.configure(state=NORMAL)
+        smsto_masterclass_vak.configure(state=NORMAL)
+    if smsto_mainmenu_keuze_combobox.get() == sms_default_keuze:
+        smsto_tekstvak_vak.delete(0.0, END)
+        smsto_tekstvak_vak.configure(state = DISABLED)
+        smsto_calender_button.configure(state=DISABLED)
+        smsto_invoer_vak.delete(0, 'end')
+        smsto_invoer_vak.configure(state=DISABLED)
+        smsto_zoek_button.configure(state=DISABLED)
+        smsto_personen_vak.delete(0, 'end')
+        smsto_nummers_vak.delete(0, 'end')
+        smsto_masterclass_vak.delete(0, 'end')
+        smsto_personen_vak.configure(state=DISABLED)
+        smsto_nummers_vak.configure(state=DISABLED)
+        smsto_masterclass_vak.configure(state=DISABLED)
+        smsto_verstuur_sms_button.configure(state=DISABLED)
+        teller = 1
+    elif smsto_mainmenu_keuze_combobox.get() == sms_reminder_analytische_test:
+        smsto_tekstvak_vak.delete(0.0, END)
+        smsto_tekstvak_vak.configure(state = NORMAL)
+        smsto_tekstvak_vak.insert(INSERT, sms_reminder_analytische_test_text)
+    elif smsto_mainmenu_keuze_combobox.get() == sms_reminder_assessment:
+        smsto_tekstvak_vak.delete(0.0, END)
+        smsto_tekstvak_vak.configure(state = NORMAL)
+        smsto_tekstvak_vak.insert(INSERT, sms_reminder_assessment_text)
+    elif smsto_mainmenu_keuze_combobox.get() == sms_persoonlijke_sms:
+        smsto_tekstvak_vak.delete(0.0, END)
+        smsto_tekstvak_vak.configure(state = NORMAL)
+        smsto_tekstvak_vak.insert(INSERT, sms_persoonlijke_sms_text)
+
+
+
+
+
+#############################################################################
+# SMSTO-blok
+# Onderstaande functie creërt het venster voor de SMS-Tool.
+# ###########################################################################
+
+
+#Onderstaande functie creërt het venster voor de SMS-Tool en creërt alle
+#knoppen en velden die zichtbaar zijn en maakt eventueel waar nodig variabelen
+#aan. Aan knoppen/velden met een functionaliteit wordt een functie gebonden
+#(met command=).
+    
+def smsto_menu():
+    global smsto_invoer_vak
+    global smsto_mainmenu
+    global smsto_mainmenu_keuze_combobox
+    global smsto_tekstvak_vak
+    global sms_default_keuze
+    global sms_reminder_analytische_test
+    global sms_reminder_assessment
+    global sms_persoonlijke_sms
+    global smsto_calender_button
+    global smsto_invoer_vak
+    global geselecteerde_datum
+    global smsto_zoek_button
+    global smsto_personen_vak
+    global smsto_nummers_vak
+    global smsto_verstuur_sms_button
+    global smsto_persoon_en_nummer
+    global smsto_telefoonlijst_leeg_button
+    global smsto_engels_checkbox
+    global smsto_checkbox_aan_uit
+    global smsto_masterclass_vak
+    global smsto_welke_score_label
+    global teller
+    global smsto_nederlands_button_photo
+    global smsto_engels_button_photo
+    global smsto_nederlandse_modus
+    global smsto_engelse_modus
+    global smsto_engels_button_photo
+    global smsto_nederlands_button_photo
+    global smsto_engels_label
+    global smsto_nederlands_label
+    smsto_nederlandse_modus = 1
+    smsto_engelse_modus = 0
+    smsto_persoon_en_nummer = []
+    teller = 1
+    print(str(datetime.datetime.now())+"\tSMS-Tool opened")
+    smsto_mainmenu = tk.Toplevel()
+    smsto_mainmenu.wm_title("SMS-Tool")
+    smsto_mainmenu.tk.call('wm', 'iconphoto', smsto_mainmenu._w, tk.PhotoImage(file='top_logo.png'))  
+    smsto_mainmenu.geometry('725x500')
+    smsto_mainmenu.configure(background = 'white')   
+    smsto_placeholder_plek = Label(smsto_mainmenu, image=placeholder, border = 0).place(x = 125, y = 20)
+    smsto_main_label = tk.Label(smsto_mainmenu, text = "SMS-Tool", bg = 'white', fg = '#01bb8c', font=("Gotham book", 12))
+    smsto_main_label.place(x=260, y=100)    
+    smsto_welke_sms_label = tk.Label(smsto_mainmenu, text = "Welk soort SMS wil je versturen?", bg = 'white')
+    smsto_welke_sms_label.place(x=20, y=140)
+    sms_default_keuze = "Maak een keuze"
+    sms_reminder_analytische_test = "Reminder: Analytische test"
+    sms_reminder_assessment = "Reminder: Assessmentdag"
+    sms_persoonlijke_sms = "Persoonlijke SMS"
+    sms_keuzes = [sms_default_keuze,
+                sms_reminder_analytische_test,
+                sms_reminder_assessment,
+                sms_persoonlijke_sms]
+    smsto_mainmenu_keuze_combobox = ttk.Combobox(smsto_mainmenu, values=sms_keuzes, width = 24, state='readonly')
+    smsto_mainmenu_keuze_combobox.place(x=22, y=160)
+    smsto_mainmenu_keuze_combobox.current(0)
+    smsto_mainmenu_keuze_combobox.bind("<<ComboboxSelected>>", smsto_mainmenu_select_combobox)
+    smsto_invoer_label = tk.Label(smsto_mainmenu, text = "Zoek op naam of datum:", bg = 'white')
+    smsto_invoer_label.place(x=335, y=140)
+    smsto_invoer_vak = tk.Entry(smsto_mainmenu, state=DISABLED, font='TkDefaultFont', relief ='solid', bd = 1)
+    smsto_invoer_vak.bind('<Return>', smsto_zoek_plzceholder) 
+    smsto_invoer_vak.place(x=335, y = 160, width = 133)
+    smsto_calender_button = Button(smsto_mainmenu, pady=-2, state=DISABLED, text=chr(0x1F4C5), command=smsto_calendar_button_click, background = 'white')
+    smsto_calender_button.place(x=472, y=159, height=20)
+    smsto_zoek_button = Button(smsto_mainmenu, text='zoek', state=DISABLED, command=smsto_zoek_placeholder, background = '#01bb8c', fg = 'white')
+    smsto_zoek_button.place(x=510, y=159, height=20, width = 70)
+    smsto_tekstvak_sms_label = tk.Label(smsto_mainmenu, text = "Te versturen SMS:", bg = 'white')
+    smsto_tekstvak_sms_label.place(x=20, y=200)
+    smsto_tekstvak_vak = tk.Text(smsto_mainmenu, state=DISABLED, fg = 'gray', font='TkDefaultFont', wrap=WORD, relief ='solid', bd = 1)
+    smsto_tekstvak_vak.place(x=20, y = 220, height = 210, width = 260)
+    smsto_personen_sms_label = tk.Label(smsto_mainmenu, text = "Personen:", bg = 'white')
+    smsto_personen_sms_label.place(x=335, y=200)
+    smsto_personen_vak = tk.Listbox(smsto_mainmenu, selectmode=MULTIPLE, state=DISABLED, fg = 'gray', font='TkDefaultFont', relief ='solid', bd = 1)
+    smsto_personen_vak.place(x=335, y = 220, height = 210, width = 120)
+    smsto_personen_vak.bind('<Delete>', smsto_delete_persoon_en_nummer_van_lijst)
+    smsto_nummers_sms_label = tk.Label(smsto_mainmenu, text = "Telefoonnummers:", bg = 'white')
+    smsto_nummers_sms_label.place(x=460, y=200)  
+    smsto_nummers_vak = tk.Listbox(smsto_mainmenu, state=DISABLED, fg = 'gray', font='TkDefaultFont', relief ='solid', bd = 1)
+    smsto_nummers_vak.place(x=460, y = 220, height = 210, width = 120)
+    smsto_nummers_vak.bind('<Delete>', smsto_delete_nummer_en_persoon_van_lijst)
+    smsto_masterclass_sms_label = tk.Label(smsto_mainmenu, text = "Masterclass + AT:", bg = 'white')
+    smsto_masterclass_sms_label.place(x=585, y=200) 
+    smsto_masterclass_vak = tk.Listbox(smsto_mainmenu, state=DISABLED, fg = 'gray', font='TkDefaultFont', relief ='solid', bd = 1)
+    smsto_masterclass_vak.place(x=585, y = 220, height = 210, width = 120)
+    smsto_masterclass_vak.bind('<Delete>', smsto_delete_nummer_en_persoon_van_lijst)
+    smsto_masterclass_vak.bind('<<ListboxSelect>>', smsto_popup_analytische_test)
+    smsto_masterclass_vak.bind('<<Button-1>>', smsto_popup_analytische_test)
+    smsto_masterclass_vak.bind('<Leave>', smsto_popup_analytische_test_weg)
+    smsto_nederlands_button_photo=ImageTk.PhotoImage(Image.open("vlag_nl.png"))
+    smsto_nederlands_button = Button(smsto_mainmenu, bg='white', image = smsto_nederlands_button_photo, state=NORMAL, command=smsto_nederlandstalig_optie_aan)
+    smsto_nederlands_button.place(x=660, y=20)
+    smsto_nederlands_label = tk.Label(smsto_mainmenu, bg='white', text='NL', font=("TkDefaultFont", 6))
+    smsto_nederlands_label.place(x=663, y=42)
+    smsto_engels_button_photo=ImageTk.PhotoImage(Image.open("vlag_uk.gif"))
+    smsto_engels_button = Button(smsto_mainmenu, bg='white', image=smsto_engels_button_photo, command=smsto_engelstalig_optie_aan)
+    smsto_engels_button.place(x=685, y=20)
+    smsto_engels_label = tk.Label(smsto_mainmenu, bg='white', text='', font=("TkDefaultFont", 6))
+    smsto_engels_label.place(x=688, y=42)
+    smsto_welke_score_label = tk.Label(smsto_mainmenu, text = '', bg = 'white')
+    smsto_welke_score_label.place(x=590, y=430)
+    smsto_telefoonlijst_leeg_button = Button(smsto_mainmenu, state=DISABLED, text="maak leeg", command=smsto_maak_telefoonlijst_leeg, background = 'white')
+    smsto_telefoonlijst_leeg_button.place(x=335, y=435, width = 80)
+    smsto_pas_text_aan_button = Button(smsto_mainmenu, text="pas standaard\ntekst aan", command=smsto_pas_text_aan, background = 'white')
+    smsto_pas_text_aan_button.place(x=180, y=435, width = 100)
+    smsto_terug_button = Button(smsto_mainmenu, text="terug naar\nhoofdmenu", command=smsto_terug_button_click, background = 'white')
+    smsto_terug_button.place(x=5, y=455, width = 100)
+    smsto_verstuur_sms_button = Button(smsto_mainmenu, command=smsto_verstuur_sms, text='verstuur\nSMS', state=DISABLED, background = '#01bb8c', fg = 'white')
+    smsto_verstuur_sms_button.place(x=640, y=455, width = 80)
+
+#Onderstaande functie sluit het venster van de SMS-Tool. Wordt aangeroepen door
+#de "terug naar hoofdmenu"-knop in het venster van de SMS-Tool.
+
+def smsto_terug_button_click():
+    global smsto_mainmenu
+    print(str(datetime.datetime.now()) + "\tUser clicked button 'terug naar hoofdmenu'")
+    print(str(datetime.datetime.now()) + "\tClosing SMS-Tool..")
+    print(str(datetime.datetime.now()) + "\tBack in main menu")
+    smsto_mainmenu.destroy()
+
+
+
+
+
+
+
+
+"""-----------------------------------------------------------------------"""
+"""-----------------------------------------------------------------------"""
+"""--------------------------------ASESTO---------------------------------"""
+"""-----------------------------------------------------------------------"""
+"""-----------------------------------------------------------------------"""
+
+
+#############################################################################
+# ASESTO-blok
+# Onderstaande functie creërt het venster voor de Assessment-Tool.
+# ###########################################################################
+
+
+#In progress.. Creërt het venster voor de Assessment-Tool
+
+def asesto_menu():
+    global asesto_mainmenu
+    print(str(datetime.datetime.now())+"\tAssessment-Tool opened")
+    asesto_mainmenu = tk.Toplevel()
+    asesto_mainmenu.wm_title("Assesment-Tool")
+    asesto_mainmenu.tk.call('wm', 'iconphoto', asesto_mainmenu._w, tk.PhotoImage(file='top_logo.png'))  
+    asesto_mainmenu.geometry('600x500')
+    asesto_mainmenu.configure(background = 'white')
+    asesto_placeholder_plek = Label(asesto_mainmenu, image=placeholder, border = 0).place(x = 125, y = 20)
+    asesto_keuze_label = tk.Label(asesto_mainmenu, text = "Assessment-Tool", bg = 'white', fg = '#01bb8c', font=("Gotham book", 12))
+    asesto_keuze_label.place(x=220, y=100)
+    asesto_terug_button = Button(asesto_mainmenu, text="terug naar\nhoofdmenu", command=asesto_terug_button_click, background = 'white')
+    asesto_terug_button.place(x=5, y=455, width = 100)
+
+#Onderstaande functie sluit het venster van de Assessment-Tool. Wordt
+#aangeroepen door de "terug naar hoofdmenu"-knop in het venster van de
+#Assessment-Tool.
+
+def asesto_terug_button_click():
+    global asesto_mainmenu
+    print(str(datetime.datetime.now()) + "\tUser clicked button 'terug naar hoofdmenu'")
+    print(str(datetime.datetime.now()) + "\tClosing Assessment-Tool..")
+    print(str(datetime.datetime.now()) + "\tBack in main menu")
+    asesto_mainmenu.destroy()
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""-----------------------------------------------------------------------"""
+"""-----------------------------------------------------------------------"""
+"""-------------------------------MAINMENU--------------------------------"""
+"""-----------------------------------------------------------------------"""
+"""-----------------------------------------------------------------------"""
+
+
+#############################################################################
+# MAINMENU-blok
+# Onderstaande functies worden aangeroepen vanuit het hoofdmenu.
+# ###########################################################################
+
+
+#Onderstaande functie opent op basis van de geselecteerde waarde in de
+#main menu combobox de geselecteerde tool. 
+
+def mainmenu_ga_button_click():
+    print(str(datetime.datetime.now()) + "\tUser clicked button 'ga': " + mainmenu_keuze_combobox.get())
+    if mainmenu_keuze_combobox.get() == kies_smsto:
+        print(str(datetime.datetime.now()) + "\tOpening SMS-Tool..")
+        smsto_menu()
+    if mainmenu_keuze_combobox.get() == kies_asesto:
+        print(str(datetime.datetime.now()) + "\tOpening Assessment-Tool..")
+        asesto_menu()
+
+#Onderstaande functie logt de geselecteerde waarde van de main menu combobox.
+              
+def mainmenu_select_combobox(event):
+    print(str(datetime.datetime.now()) + "\tUser selected: " + mainmenu_keuze_combobox.get())
+
+#Onderstaande functie sluit de applicatie. Aangeroepen door de knop "afsluiten".
+
+def mainmenu_sluit_click():
+    print(str(datetime.datetime.now()) + "\tUser clicked button 'afsluiten'")
+    print(str(datetime.datetime.now()) + "\tClosing application")
+    mainmenu.destroy()
+
+
+
+
+
+
+#############################################################################
+# MAINMENU-blok
+# Onderstaande code creërt de applicatie, het hoofdvenster en de knoppen/velden
+# van het hoofdmenu. mainmenu.mainloop() zorgt ervoor dat de applicatie oneindig
+# runt totdat op de "afsluiten" knop of het kruisje wordt geklikt. Vanuit deze
+# mainloop kunnen alle functies hierboven gedefiniëerd volgens beschreven
+# manieren worden aangeroepen.
+# ###########################################################################
+
+
+mainmenu = tk.Tk()
+mainmenu.title('Mark\'s Magische Machine')
+mainmenu.tk.call('wm', 'iconphoto', mainmenu._w, tk.PhotoImage(file='top_logo.png'))  
+mainmenu.geometry('600x500')
+mainmenu.configure(background = 'white')
+placeholder = ImageTk.PhotoImage(Image.open("background_logo.jpg").resize((350,100), Image.BICUBIC))
+placeholder_plek = Label(mainmenu, image=placeholder, border = 0).place(x = 125, y = 50)
+placeholder = ImageTk.PhotoImage(Image.open("tool_logo.jpg").resize((350,68), Image.BICUBIC))
+mainmenu_keuze_label = tk.Label(mainmenu, text = "Welkom, kies een tool:", bg = 'white')
+mainmenu_keuze_label.place(x=235, y=200)
+maak_keuze = "Maak een keuze"
+kies_smsto = "SMS-tool"
+kies_asesto = "Assessmentdag-tool"
+keuzes = [maak_keuze,
+          kies_smsto, 
+          kies_asesto,]
+mainmenu_keuze_combobox = ttk.Combobox(mainmenu, values=keuzes, state='readonly')
+mainmenu_keuze_combobox.place(x=230, y=220)
+mainmenu_keuze_combobox.current(0)
+mainmenu_keuze_combobox.bind("<<ComboboxSelected>>", mainmenu_select_combobox)
+mainmenu_ga_button = Button(mainmenu, text="ga", command=mainmenu_ga_button_click, background = 'white')
+mainmenu_ga_button.place(x=265, y=245, width = 75)
+print(str(datetime.datetime.now())+"\tStarting up Main Menu..")
+print(str(datetime.datetime.now())+"\tMain menu opened")
+mainmenu_sluit_button = Button(mainmenu, text="afsluiten", command=mainmenu_sluit_click, background = 'white')
+mainmenu_sluit_button.place(x=5, y=470, width = 100)
+mainmenu.mainloop()
+print(str(datetime.datetime.now())+"\tApplication closed successfully.")
